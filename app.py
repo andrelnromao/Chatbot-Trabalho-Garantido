@@ -8,68 +8,80 @@ from langchain_chroma import Chroma # Banco de dados vetorial utilizado no proje
 from langchain_groq import ChatGroq # Integra o Python à API da Groq para utilizar o LLM
 from langchain_huggingface import HuggingFaceEmbeddings # Gera embeddings utilizando modelos do Hugging Face
 
-#1. CONFIGURAÇÃO DA API GRPQ
-#Carrega as variaveis armazenadas no arquivo .env
+#1. CONFIGURAÇÃO DA API GROQ
+
+# Carrega as variáveis armazenadas no arquivo .env
 load_dotenv()
 
-#Verifica se a chave API esta disponivel
+# Verifica se a chave GROQ_API_KEY está disponível
 if not os.getenv("GROQ_API_KEY"):
-    st.error('Configure a chave API_GROQ no arquivo .env')
-    st.stop() # interrompe a execução
+
+    # Exibe uma mensagem de erro na interface Streamlit
+    st.error("Configure a chave GROQ_API_KEY no arquivo .env")
+
+    # Interrompe a execução da aplicação
+    st.stop()
+
 
 #2. INTERFACE INICIAL
-st.title('Chatbot Trabalho Garantido')
-st.write('Faça perguntas sobre o edital do programa')
 
-#Para testar: phyton -m streamlit run app.py
-#
+# Exibe o título principal da aplicação
+st.title("Chatbot Trabalho Garantido")
+
+# Exibe uma mensagem de orientação ao usuário
+st.write("Faça perguntas sobre o edital do programa.")
+
+#Para testar: python -m streamlit run app.py
+#ctrl c para parar a execução do streamlit
+
 
 #3. PREPARAÇÃO DO RAG
 
-# Armazena e cache recursos criados pela função
-# Evita reconstruir o banco vetorial a cata ingeração
+# Armazena em cache os recursos criados pela função
+# Evita reconstruir o banco vetorial a cada interação
 @st.cache_resource
 def iniciar_rag():
 
     # Carrega o arquivo PDF
-    carregador = pyPDFLoader("Trabalho-garantido-edital.pdf")
+    carregador = PyPDFLoader("EDITAL_Trabalho_Garantido.pdf")
 
-    #Lê o PDF e transforma seu conteúdo chunks
-    documentos = carrregador.load()
+    # Lê o PDF e transforma seu conteúdo chunks
+    documentos = carregador.load()
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,    # Tamanho maximo de cada chunk em caracteres
+        chunk_size=1000,    # Tamanho máximo de cada chunk em caracteres
         chunk_overlap=200   # Sobreposição entre os chunks
     )
     chunks = splitter.split_documents(documentos)
 
-    # Carrega o modelo do embeddings do Hugging Face.
+
+    # Carrega o modelo de embeddings do Hugging Face.
     embeddings = HuggingFaceEmbeddings(
-        model_name-"sentence-transformers/all=MiniLM-L6-v2"
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
     # Cria o banco vetorial a partir dos chunks e armazena no Chroma
 
     banco = Chroma.from_documents(
         documents=chunks,
-        embeddings=embeddings
+        embedding=embeddings
     )
 
-    retriever = banco.as_retriever(search_kwargs=("k": 5))
-
+    retriever = banco.as_retriever(search_kwargs={"k": 5})
+  
     # Configura o modelo de linguagem acessado pela Groq
-    # O LLM será responsavel por gerar as respostas com base nos trechos
-
+    # O LLM será responsável por gerar as respostas com base nos trechos recuperados do edital
+  
     llm = ChatGroq(model="openai/gpt-oss-120b",temperature=0)
 
     return retriever, llm
 
-    # INICIALIZAÇÃO DO CHATBOT
+#INICIALIZAÇÃO DO CHATBOT
 
-    try:
+try:
 
-        #Exibe uma mensagem enquanto o RAG é preparado
-with st.spinner("Preparando o chatbot..."):
+    # Exibe uma mensagem enquanto o RAG é preparado
+    with st.spinner("Preparando o chatbot..."):
 
         # Executa a função e recebe o retriever e o LLM
         retriever, llm = iniciar_rag()
@@ -161,8 +173,4 @@ if pergunta := st.chat_input("Digite sua pergunta..."):
             except Exception as erro:
                 # Exibe uma mensagem caso ocorra algum erro
                 st.error(f"Erro ao responder: {erro}")
-                
 
-Remover todos os anúncios
-
-Remover todos os anúncios
